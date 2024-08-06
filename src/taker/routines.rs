@@ -254,8 +254,6 @@ pub struct NextPeerInfoArgs {
 
 /// [Internal] Send a Proof funding to the maker and init next hop.
 pub(crate) fn send_proof_of_funding_and_init_next_hop(
-    // socket_reader: &mut BufReader<ReadHalf<'_>>,
-    // socket_writer: &mut WriteHalf<'_>,
     socket: &mut TcpStream,
     tmi: ThisMakerInfo,
     npi: NextPeerInfoArgs,
@@ -406,8 +404,6 @@ pub(crate) fn send_proof_of_funding_and_init_next_hop(
 
 /// Send hash preimage via the writer and read the response.
 pub(crate) fn send_hash_preimage_and_get_private_keys(
-    // socket_reader: &mut BufReader<ReadHalf<'_>>,
-    // socket_writer: &mut WriteHalf<'_>,
     socket: &mut TcpStream,
     senders_multisig_redeemscripts: &[ScriptBuf],
     receivers_multisig_redeemscripts: &[ScriptBuf],

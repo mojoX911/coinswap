@@ -6,7 +6,7 @@
 
 use std::{
     fs,
-    io::{ErrorKind, Write},
+    io::{ErrorKind, Read, Write},
     net::{Ipv4Addr, SocketAddr, TcpListener, TcpStream},
     path::{Path, PathBuf},
     sync::{Arc, Mutex},
@@ -20,8 +20,6 @@ use bitcoind::bitcoincore_rpc::RpcApi;
 use socks::Socks5Stream;
 
 pub use super::Maker;
-
-use std::io::Read;
 
 use crate::{
     error::NetError,
@@ -195,7 +193,7 @@ fn network_bootstrap(
     Ok((maker_address, tor_handle))
 }
 
-/// Checks if the wallet already have fidelity bonds. if not, create the first fidelity bond.
+/// Checks if the wallet already has fidelity bonds. if not, create the first fidelity bond.
 fn setup_fidelity_bond(maker: &Arc<Maker>, maker_address: &str) -> Result<(), MakerError> {
     let highest_index = maker.get_wallet().read()?.get_highest_fidelity_index()?;
     if let Some(i) = highest_index {
@@ -344,12 +342,7 @@ fn handle_client(
         let taker_msg: TakerToMakerMessage = serde_cbor::from_slice(&taker_msg_bytes)?;
         log::info!("[{}]  <=== {}", maker.config.port, taker_msg);
 
-        let reply = handle_message(
-            &maker.clone(),
-            &mut connection_state,
-            taker_msg,
-            client_addr.ip(),
-        );
+        let reply = handle_message(&maker, &mut connection_state, taker_msg, client_addr.ip());
 
         match reply {
             Ok(reply) => {

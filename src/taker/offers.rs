@@ -10,10 +10,9 @@ use std::{
     io::{Read, Write},
     net::TcpStream,
     sync::mpsc,
-    thread,
+    thread::{self, Builder},
 };
 
-use bitcoin::Network;
 use serde::{Deserialize, Serialize};
 use socks::Socks5Stream;
 
@@ -133,21 +132,37 @@ pub fn fetch_offer_from_makers(
     maker_addresses: Vec<MakerAddress>,
     config: &TakerConfig,
 ) -> Vec<OfferAndAddress> {
-    let (offers_writer_m, offers_reader) = mpsc::channel::<Option<OfferAndAddress>>();
+    let (offers_writer, offers_reader) = mpsc::channel::<Option<OfferAndAddress>>();
+    // Thread pool for all connections to fetch maker offers.
+    let mut thread_pool = Vec::new();
     let maker_addresses_len = maker_addresses.len();
     for addr in maker_addresses {
-        let offers_writer = offers_writer_m.clone();
+        let offers_writer = offers_writer.clone();
         let taker_config: TakerConfig = config.clone();
-        thread::spawn(move || {
-            let offer = download_maker_offer(addr, taker_config);
-            offers_writer.send(offer).unwrap();
-        });
+        let thread = Builder::new()
+            .name(format!("maker_offer_fecth_thread_{}", addr))
+            .spawn(move || {
+                let offer = download_maker_offer(addr, taker_config);
+                offers_writer.send(offer).unwrap();
+            })
+            .unwrap();
+
+        thread_pool.push(thread);
     }
     let mut result = Vec::<OfferAndAddress>::new();
     for _ in 0..maker_addresses_len {
+        // TODO: Remove all unwraps and return TakerError.
         if let Some(offer_addr) = offers_reader.recv().unwrap() {
             result.push(offer_addr);
         }
+    }
+
+    for thread in thread_pool {
+        log::debug!(
+            "Joining thread : {}",
+            thread.thread().name().expect("thread names expected")
+        );
+        thread.join().unwrap();
     }
     result
 }
@@ -156,7 +171,6 @@ pub fn fetch_offer_from_makers(
 pub fn fetch_addresses_from_dns(
     socks_port: Option<u16>,
     directory_server_address: String,
-    _network: Network,
     number_of_makers: usize,
     connection_type: ConnectionType,
 ) -> Result<Vec<MakerAddress>, TakerError> {
@@ -195,7 +209,7 @@ pub fn fetch_addresses_from_dns(
 
         match response
             .lines()
-            .map(|line| MakerAddress::new(line))
+            .map(MakerAddress::new)
             .collect::<Result<Vec<MakerAddress>, _>>()
         {
             Ok(addresses) => {
