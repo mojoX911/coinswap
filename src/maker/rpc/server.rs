@@ -118,12 +118,12 @@ fn handle_request(maker: &Arc<Maker>, socket: &mut TcpStream) -> Result<(), Make
 
 pub fn start_rpc_server(maker: Arc<Maker>) -> Result<(), MakerError> {
     let rpc_port = maker.config.rpc_port;
-    let rpc_socket = format!("127.0.0.1:{}", rpc_port);
-    let listener = Arc::new(TcpListener::bind(&rpc_socket)?);
+    let rpc_address = format!("127.0.0.1:{}", rpc_port);
+    let listener = Arc::new(TcpListener::bind(&rpc_address)?);
     log::info!(
         "[{}] RPC socket binding successful at {}",
         maker.config.port,
-        rpc_socket
+        rpc_address
     );
 
     listener.set_nonblocking(true)?;
@@ -132,13 +132,9 @@ pub fn start_rpc_server(maker: Arc<Maker>) -> Result<(), MakerError> {
         match listener.accept() {
             Ok((mut stream, addr)) => {
                 log::info!("Got RPC request from: {}", addr);
-                stream
-                    .set_read_timeout(Some(Duration::from_secs(20)))
-                    .unwrap();
-                stream
-                    .set_write_timeout(Some(Duration::from_secs(20)))
-                    .unwrap();
-                handle_request(&maker, &mut stream).unwrap();
+                stream.set_read_timeout(Some(Duration::from_secs(20)))?;
+                stream.set_write_timeout(Some(Duration::from_secs(20)))?;
+                handle_request(&maker, &mut stream)?;
             }
 
             Err(e) => {

@@ -178,14 +178,10 @@ fn main() {
             )
             .unwrap();
             let config = taker2.config.clone();
-            let _ = taker.sync_offerbook(
-                read_bitcoin_network_string(&args.network).unwrap(),
-                &config,
-                args.maker_count,
-            );
+            taker.sync_offerbook(&config, args.maker_count).unwrap();
         }
         Commands::DoCoinswap => {
-            let _ = taker.do_coinswap(swap_params);
+            taker.do_coinswap(swap_params).unwrap();
         }
     }
 }

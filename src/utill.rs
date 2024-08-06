@@ -188,7 +188,6 @@ pub fn read_message(reader: &mut TcpStream) -> Result<Vec<u8>, NetError> {
     // the actual data
     let mut buffer = vec![0; length as usize];
     reader.read_exact(&mut buffer)?;
-    //let message: MakerToTakerMessage = serde_cbor::from_slice(&buffer)?;
     Ok(buffer)
 }
 

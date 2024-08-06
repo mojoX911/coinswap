@@ -29,7 +29,7 @@ use bitcoin::{
         rand::{rngs::OsRng, RngCore},
         SecretKey,
     },
-    Amount, BlockHash, Network, OutPoint, PublicKey, ScriptBuf, Transaction, Txid,
+    Amount, BlockHash, OutPoint, PublicKey, ScriptBuf, Transaction, Txid,
 };
 
 use super::{
@@ -297,9 +297,8 @@ impl Taker {
     /// If that fails too. Open an issue at [our github](https://github.com/citadel-tech/coinswap/issues)
     pub fn send_coinswap(&mut self, swap_params: SwapParams) -> Result<(), TakerError> {
         log::info!("Syncing Offerbook");
-        let network = self.wallet.store.network;
         let config = self.config.clone();
-        self.sync_offerbook(network, &config, swap_params.maker_count)?;
+        self.sync_offerbook(&config, swap_params.maker_count)?;
 
         // Generate new random preimage and initiate the first hop.
         let mut preimage = [0u8; 32];
@@ -1910,7 +1909,6 @@ impl Taker {
     /// Synchronizes the offer book with addresses obtained from directory servers and local configurations.
     pub fn sync_offerbook(
         &mut self,
-        network: Network,
         config: &TakerConfig,
         maker_count: usize,
     ) -> Result<(), TakerError> {
@@ -1950,7 +1948,6 @@ impl Taker {
         let addresses_from_dns = fetch_addresses_from_dns(
             socks_port,
             directory_address,
-            network,
             maker_count,
             config.connection_type,
         )?;
