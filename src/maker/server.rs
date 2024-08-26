@@ -339,6 +339,11 @@ fn handle_client(
                 }
             }
         }
+
+        if taker_msg_bytes.len() == 0 {
+            continue;
+        }
+
         let taker_msg: TakerToMakerMessage = serde_cbor::from_slice(&taker_msg_bytes)?;
         log::info!("[{}]  <=== {}", maker.config.port, taker_msg);
 
