@@ -27,9 +27,15 @@ fn test_standard_coinswap() {
         ((16102, Some(19052)), MakerBehavior::Normal),
     ];
 
+    let connection_type = if cfg!(target_os = "macos") {
+        ConnectionType::CLEARNET
+    } else {
+        ConnectionType::TOR
+    };
+
     // Initiate test framework, Makers and a Taker with default behavior.
     let (test_framework, taker, makers, directory_server_instance) =
-        TestFramework::init(None, makers_config_map.into(), None, ConnectionType::TOR);
+        TestFramework::init(None, makers_config_map.into(), None, connection_type);
 
     warn!("Running Test: Standard Coinswap Procedure");
 
