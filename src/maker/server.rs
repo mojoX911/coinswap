@@ -339,6 +339,12 @@ fn handle_client(
                 }
             }
         }
+
+        // Sometime in macos we get empty messages.
+        if taker_msg_bytes.is_empty() {
+            continue;
+        }
+
         let taker_msg: TakerToMakerMessage = serde_cbor::from_slice(&taker_msg_bytes)?;
         log::info!("[{}]  <=== {}", maker.config.port, taker_msg);
 
