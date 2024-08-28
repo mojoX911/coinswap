@@ -333,16 +333,15 @@ fn handle_client(
             Ok(b) => taker_msg_bytes = b,
             Err(e) => {
                 if let NetError::IO(e) = e {
-                    if e.kind() == ErrorKind::UnexpectedEof {
+                    if e.kind() == ErrorKind::UnexpectedEof || e.kind() == ErrorKind::WouldBlock {
+                        continue;
+                    } else {
+                        // For any other errors, report them
+                        log::error!("[{}] Net Error: {}", maker.config.port, e);
                         continue;
                     }
                 }
             }
-        }
-
-        // Sometime in macos we get empty messages.
-        if taker_msg_bytes.is_empty() {
-            continue;
         }
 
         let taker_msg: TakerToMakerMessage = serde_cbor::from_slice(&taker_msg_bytes)?;
