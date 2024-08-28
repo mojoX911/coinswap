@@ -317,13 +317,7 @@ fn handle_client(
     stream: &mut TcpStream,
     client_addr: SocketAddr,
 ) -> Result<(), MakerError> {
-    stream.set_read_timeout(Some(Duration::from_secs(
-        maker.config.idle_connection_timeout,
-    )))?;
-
-    stream.set_write_timeout(Some(Duration::from_secs(
-        maker.config.idle_connection_timeout,
-    )))?;
+    stream.set_nonblocking(false)?; // Block this thread until message is read.
 
     let mut connection_state = ConnectionState::default();
 
@@ -333,7 +327,7 @@ fn handle_client(
             Ok(b) => taker_msg_bytes = b,
             Err(e) => {
                 if let NetError::IO(e) = e {
-                    if e.kind() == ErrorKind::UnexpectedEof || e.kind() == ErrorKind::WouldBlock {
+                    if e.kind() == ErrorKind::UnexpectedEof {
                         continue;
                     } else {
                         // For any other errors, report them
