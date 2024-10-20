@@ -319,10 +319,10 @@ impl Wallet {
                 .expect("Amount sum overflowed")
         });
 
-        if total_input_amount < amount {
+        if total_input_amount < amount + fee {
             return Err(WalletError::InsufficientFund {
-                available: total_input_amount.to_sat(),
-                required: amount.to_sat(),
+                available: total_input_amount.to_btc(),
+                required: (amount + fee).to_btc(),
             });
         }
 
@@ -344,10 +344,13 @@ impl Wallet {
 
         if let Some(change) = change_amount {
             let change_addrs = self.get_next_internal_addresses(1)?[0].script_pubkey();
-            tx_outs.push(TxOut {
-                value: change,
-                script_pubkey: change_addrs,
-            });
+            // check for dust
+            if change > change_addrs.minimal_non_dust() {
+                tx_outs.push(TxOut {
+                    value: change,
+                    script_pubkey: change_addrs,
+                });
+            }
         }
 
         // Set the Anti-Fee Snipping Locktime

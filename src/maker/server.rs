@@ -220,10 +220,14 @@ fn setup_fidelity_bond(maker: &Arc<Maker>, maker_address: &str) -> Result<(), Ma
             LockTime::from_height(maker.config.fidelity_timelock + current_height).unwrap()
         };
         while !*maker.shutdown.read()? {
+            // Sync at start
+            maker.get_wallet().write()?.sync()?;
+
             let fidelity_result = maker
                 .get_wallet()
                 .write()?
                 .create_fidelity(amount, locktime);
+
             match fidelity_result {
                 // Wait for sufficient fund to create fidelity bond.
                 // Hard error if fidelity still can't be created.
@@ -235,15 +239,15 @@ fn setup_fidelity_bond(maker: &Arc<Maker>, maker_address: &str) -> Result<(), Ma
                     {
                         log::warn!("Insufficient fund to create fidelity bond.");
                         let amount = required - available;
-                        let (_, addr, _) = maker
+                        let addr = maker
                             .get_wallet()
-                            .read()?
-                            .get_next_fidelity_address(locktime)?;
-                        log::info!("Send {} sats to {}", amount, addr);
+                            .write()?
+                            .get_next_external_address()?;
+                        log::info!("Send at least {} BTC to {}", amount, addr);
                         if cfg!(feature = "integration-test") {
                             sleep(Duration::from_secs(3));
                         } else {
-                            sleep(Duration::from_secs(300)); // Wait for 5 mins in production
+                            sleep(Duration::from_secs(5)); // Wait for 5 mins in production
                         }
                         continue;
                     } else {
@@ -272,6 +276,7 @@ fn setup_fidelity_bond(maker: &Arc<Maker>, maker_address: &str) -> Result<(), Ma
             }
         }
     }
+    maker.get_wallet().read()?.save_to_disk()?;
     Ok(())
 }
 
